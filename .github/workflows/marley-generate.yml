@@ -1,0 +1,138 @@
+name: MARLEY generate
+
+# Manual trigger only -- never on push. Slack reaches this through the GitHub
+# REST API (see slack/SETUP.md), which is what workflow_dispatch responds to.
+on:
+  workflow_dispatch:
+    inputs:
+      invoker:
+        description: "Who asked for the event (display only, never executed)"
+        required: false
+        default: "someone in Slack"
+
+# One neutrino at a time. Extra requests queue instead of piling up runners.
+concurrency:
+  group: marley-generate
+  cancel-in-progress: false
+
+env:
+  # Pinned deliberately: MARLEY's main branch moves, and a moving target would
+  # make runs non-reproducible and failures hard to attribute.
+  MARLEY_REF: v2.0.0
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+
+      # Cheap and fails fast: the parser is checked against fixtures, one of
+      # which is real MARLEY output, before any C++ compilation happens.
+      - name: Check the event parser
+        run: tests/run_tests.sh
+
+      - name: Check out MARLEY
+        uses: actions/checkout@v4
+        with:
+          repository: MARLEY-MC/marley
+          ref: ${{ env.MARLEY_REF }}
+          path: marley
+
+      # GSL is an optional MARLEY dependency with a bundled fallback; using the
+      # distro package is faster than compiling the bundled copy.
+      - name: Install GSL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgsl-dev
+
+      - name: Cache the MARLEY build tree
+        uses: actions/cache@v4
+        with:
+          path: marley/build
+          key: marley-${{ env.MARLEY_REF }}-${{ runner.os }}-gsl
+
+      - name: Build MARLEY and generate one event
+        env:
+          SEED: ${{ github.run_id }}
+        run: scripts/run_marley.sh
+
+      - name: Summarize the event
+        id: summary
+        run: |
+          python3 scripts/summarize_event.py events.hepmc3 --text
+          python3 scripts/summarize_event.py events.hepmc3 >> "$GITHUB_OUTPUT"
+          {
+            echo '### MARLEY event'
+            echo '```'
+            python3 scripts/summarize_event.py events.hepmc3 --text
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload event files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: marley-event-${{ github.run_id }}
+          path: |
+            events.hepmc3
+            events_legacy.txt
+            one_event.seed*.js
+          if-no-files-found: warn
+
+      # Runs even on failure so a broken build is reported in Slack rather than
+      # silently leaving the request unanswered.
+      - name: Announce in Slack
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          JOB_STATUS: ${{ job.status }}
+          INVOKER: ${{ inputs.invoker }}
+          SEED: ${{ steps.summary.outputs.seed || github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REACTION: ${{ steps.summary.outputs.reaction }}
+          ENERGY: ${{ steps.summary.outputs.energy }}
+          LEPTON: ${{ steps.summary.outputs.lepton }}
+          LEPTON_KE: ${{ steps.summary.outputs.lepton_ke }}
+          RESIDUE: ${{ steps.summary.outputs.residue }}
+          GAMMAS: ${{ steps.summary.outputs.gammas }}
+          XSEC: ${{ steps.summary.outputs.xsec }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL is not set -- skipping the Slack post."
+            exit 0
+          fi
+
+          # A Slack webhook trigger fails if a variable it declares is missing
+          # from the payload, so every key is always sent, with "n/a" standing in
+          # where the event could not be parsed. jq does the quoting, which
+          # matters because the reaction string is UTF-8 (nu_e, arrows, 40K).
+          jq -n \
+            --arg status    "$JOB_STATUS" \
+            --arg invoker   "${INVOKER:-someone}" \
+            --arg reaction  "${REACTION:-n/a}" \
+            --arg energy    "${ENERGY:-n/a}" \
+            --arg lepton    "${LEPTON:-n/a}" \
+            --arg lepton_ke "${LEPTON_KE:-n/a}" \
+            --arg residue   "${RESIDUE:-n/a}" \
+            --arg gammas    "${GAMMAS:-n/a}" \
+            --arg xsec      "${XSEC:-n/a}" \
+            --arg seed      "$SEED" \
+            --arg run_url   "$RUN_URL" \
+            '{status: $status, invoker: $invoker, reaction: $reaction,
+              energy: $energy, lepton: $lepton, lepton_ke: $lepton_ke,
+              residue: $residue, gammas: $gammas, xsec: $xsec,
+              seed: $seed, run_url: $run_url}' > payload.json
+
+          echo "Posting to Slack:"
+          cat payload.json
+
+          curl --fail-with-body -sS -X POST \
+            -H 'Content-Type: application/json' \
+            --data @payload.json \
+            "$SLACK_WEBHOOK_URL"

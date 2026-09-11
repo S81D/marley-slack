@@ -1,0 +1,13 @@
+# MARLEY source checkout (fetched by the workflow, or cloned locally)
+/marley/
+
+# Generated events and run artifacts
+*.hepmc3
+!tests/*.hepmc3
+events_legacy.txt
+one_event.seed*.js
+payload.json
+
+__pycache__/
+.DS_Store
+/run/
