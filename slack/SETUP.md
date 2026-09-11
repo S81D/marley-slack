@@ -95,7 +95,7 @@ workflow already keeps you well under.
 3. Add the web-request step:
    - Method: `POST`
    - URL:
-     `https://api.github.com/repos/<OWNER>/<REPO>/actions/workflows/marley-generate.yml/dispatches`
+     `https://api.github.com/repos/S81D/marley-slack/actions/workflows/marley-generate.yml/dispatches`
    - Headers:
      - `Authorization: Bearer <your token>`
      - `Accept: application/vnd.github+json`
@@ -129,6 +129,13 @@ order of effort:
 
 ## Security notes
 
+- **This repo is public.** Nothing secret is committed, and `workflow_dispatch`
+  can only be triggered by someone with write access, so a passer-by cannot
+  summon neutrinos. But run artifacts and logs are world-readable, so keep it
+  that way: never echo the webhook URL or token into the log.
+- The GitHub token is the one thing worth guarding. Scope the fine-grained PAT to
+  **only** `S81D/marley-slack` with `Actions: Read and write`, so a leak cannot
+  reach anything else you own.
 - The trigger takes **no arguments**. `invoker` is passed through for display
   only and never reaches a shell. No Slack input is interpolated into a command.
 - The GitHub token lives only in the Slack step's configuration; the Slack

@@ -1,5 +1,7 @@
 # marley-slack
 
+<https://github.com/S81D/marley-slack>
+
 Ask Slack for a neutrino interaction; GitHub Actions builds
 [MARLEY](https://github.com/MARLEY-MC/marley), generates exactly **one** event,
 and Slack announces what came out.
