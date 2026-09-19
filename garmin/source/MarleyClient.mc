@@ -50,6 +50,9 @@ class MarleyClient {
             :headers => {
                 "Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON,
                 "Accept" => "application/vnd.github+json",
+                // GitHub rejects requests with no User-Agent (403), which would
+                // otherwise be indistinguishable from a bad token.
+                "User-Agent" => "marley-slack-garmin",
                 "Authorization" => "Bearer " + token
             },
             :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON

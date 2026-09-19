@@ -8,7 +8,7 @@ on:
       invoker:
         description: "Who asked for the event (display only, never executed)"
         required: false
-        default: "someone in Slack"
+        default: "the watch"
 
 # One neutrino at a time. Extra requests queue instead of piling up runners.
 concurrency:
