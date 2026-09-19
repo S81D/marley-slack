@@ -56,6 +56,19 @@ else
   failures=$((failures + 1))
 fi
 
+echo "ascii transliteration (Garmin fonts lack the symbols)"
+ascii=$(python3 scripts/summarize_event.py --ascii tests/real_event.hepmc3 | sed -n 's/^reaction=//p')
+if [[ $ascii == "nue + 40Ar -> e- + 40K*" ]]; then
+  printf '  ok    %-12s %s\n' "reaction" "$ascii"
+else
+  printf '  FAIL  %-12s got %q\n' "reaction" "$ascii"; failures=$((failures + 1))
+fi
+if LC_ALL=C grep -q '[^[:print:][:space:]]' <<<"$(scripts/event_payload.sh tests/real_event.hepmc3)"; then
+  printf '  FAIL  payload still contains non-ASCII\n'; failures=$((failures + 1))
+else
+  printf '  ok    %-12s payload is pure ASCII\n' "payload"
+fi
+
 echo "slack payload contract"
 # Slack fails the workflow if a declared variable is missing, so the payload must
 # always carry all 11 keys as flat strings -- even when there is no event file.
@@ -66,8 +79,8 @@ for fixture in tests/real_event.hepmc3 does_not_exist.hepmc3; do
   flat=$(printf '%s' "$payload" | jq -r '[.[] | type] | unique | join(",")' 2>/dev/null)
   empty=$(printf '%s' "$payload" | jq -r '[.[] | select(. == "")] | length' 2>/dev/null)
   label=$(basename "$fixture")
-  if [[ $keys == 12 && $flat == "string" && $empty == 0 ]]; then
-    printf '  ok    %-22s 12 flat string keys, none empty\n' "$label"
+  if [[ $keys == 14 && $flat == "string" && $empty == 0 ]]; then
+    printf '  ok    %-22s 14 flat string keys, none empty\n' "$label"
   else
     printf '  FAIL  %-22s keys=%s types=%s empty=%s\n' "$label" "$keys" "$flat" "$empty"
     failures=$((failures + 1))

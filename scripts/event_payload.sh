@@ -26,7 +26,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 event_file=${1:-}
 summary=""
 if [[ -n $event_file && -r $event_file ]]; then
-  summary=$(python3 scripts/summarize_event.py "$event_file" 2>/dev/null || true)
+  # --ascii: the watch renders these directly and its fonts lack the symbols.
+  summary=$(python3 scripts/summarize_event.py --ascii "$event_file" 2>/dev/null || true)
 fi
 
 # Pull one key=value out of the parser output, falling back to "n/a".
@@ -52,6 +53,8 @@ jq -n \
   --arg lepton_ke "$(field lepton_ke)" \
   --arg residue   "$(field residue)" \
   --arg gammas    "$(field gammas)" \
+  --arg energy_value "$(field energy_value)" \
+  --arg energy_unit  "$(field energy_unit)" \
   --arg xsec      "$(field xsec)" \
   --arg seed      "$seed" \
   --arg run_url   "${RUN_URL:-n/a}" \
@@ -59,4 +62,5 @@ jq -n \
   '{status: $status, invoker: $invoker, reaction: $reaction, energy: $energy,
     lepton: $lepton, lepton_ke: $lepton_ke, residue: $residue,
     gammas: $gammas, xsec: $xsec, seed: $seed, run_url: $run_url,
+    energy_value: $energy_value, energy_unit: $energy_unit,
     generated_at: $generated_at}'

@@ -39,6 +39,23 @@ PARTICLE_NAMES = {
     22: "γ", 2112: "n", 2212: "p",
 }
 
+# Order matters: the barred neutrino (nu + U+0304) must be replaced before
+# plain nu, and superscript digits before anything else.
+ASCII_MAP = [
+    ("\u03bd\u0304", "nubar"), ("\u03bd", "nu"), ("\u03bc", "mu"), ("\u03b3", "gamma"),
+    ("\u2192", "->"), ("\u207b", "-"), ("\u207a", "+"),
+    ("\u2070", "0"), ("\u00b9", "1"), ("\u00b2", "2"), ("\u00b3", "3"), ("\u2074", "4"),
+    ("\u2075", "5"), ("\u2076", "6"), ("\u2077", "7"), ("\u2078", "8"), ("\u2079", "9"),
+]
+
+
+def to_ascii(text):
+    """Flatten the display strings to characters Garmin's fonts actually have."""
+    for src, dst in ASCII_MAP:
+        text = text.replace(src, dst)
+    return text
+
+
 LEPTON_PDGS = {11, 12, 13, 14, 15, 16}
 NUCLEUS_PDG_MIN = 1_000_000_000
 
@@ -166,6 +183,8 @@ def summarize(path):
 
     if projectile is not None:
         fields["energy"] = f"{projectile['energy']:.1f} {unit}"
+        fields["energy_value"] = f"{projectile['energy']:.1f}"
+        fields["energy_unit"] = unit
 
     # "νe + ⁴⁰Ar → e⁻ + ⁴⁰K*", with the star only if the residue is excited.
     if None not in (projectile, target, ejectile, primary_residue):
@@ -220,9 +239,13 @@ def main():
     parser.add_argument("event_file", help="MARLEY HepMC3 ASCII output file")
     parser.add_argument("--text", action="store_true",
                         help="print a human-readable block instead of key=value")
+    parser.add_argument("--ascii", action="store_true",
+                        help="transliterate to ASCII (Garmin fonts lack the symbols)")
     args = parser.parse_args()
 
     fields = summarize(args.event_file)
+    if args.ascii:
+        fields = {k: to_ascii(v) for k, v in fields.items()}
 
     if args.text:
         width = max(len(k) for k in fields)
