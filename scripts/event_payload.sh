@@ -54,6 +54,10 @@ jq -n \
   --arg residue   "$(field residue)" \
   --arg gammas    "$(field gammas)" \
   --arg energy_value "$(field energy_value)" \
+  --arg residue_ex   "$(field residue_ex)" \
+  --arg ejected      "$(field ejected)" \
+  --arg gamma_sum    "$(field gamma_sum)" \
+  --arg gamma_top    "$(field gamma_top)" \
   --arg energy_unit  "$(field energy_unit)" \
   --arg xsec      "$(field xsec)" \
   --arg seed      "$seed" \
@@ -63,4 +67,6 @@ jq -n \
     lepton: $lepton, lepton_ke: $lepton_ke, residue: $residue,
     gammas: $gammas, xsec: $xsec, seed: $seed, run_url: $run_url,
     energy_value: $energy_value, energy_unit: $energy_unit,
+    residue_ex: $residue_ex, ejected: $ejected,
+    gamma_sum: $gamma_sum, gamma_top: $gamma_top,
     generated_at: $generated_at}'

@@ -202,15 +202,36 @@ def summarize(path):
         fields["lepton"] = particle_name(ejectile["pdg"])
         fields["lepton_ke"] = f"{ejectile['energy'] - ejectile['mass']:.1f} {unit}"
 
-    # The nucleus left once the de-excitation cascade has finished.
-    final_nucleus = next((p for p in final_state if is_nucleus(p["pdg"])), None)
-    if final_nucleus is not None:
-        fields["residue"] = particle_name(final_nucleus["pdg"])
+    # The nucleus left once the de-excitation cascade has finished. Pick the
+    # HEAVIEST final nucleus: ~1% of events eject an alpha, and taking the
+    # first nucleus would report the alpha as the residue.
+    nuclei = [p for p in final_state if is_nucleus(p["pdg"])]
+    if nuclei:
+        heaviest = max(nuclei, key=lambda p: (p["pdg"] // 10) % 1000)
+        fields["residue"] = particle_name(heaviest["pdg"])
+        nuclei.remove(heaviest)
 
-    fields["gammas"] = str(sum(1 for p in final_state if p["pdg"] == 22))
-    nucleons = sum(1 for p in final_state if p["pdg"] in (2112, 2212))
-    if nucleons:
-        fields["nucleons"] = str(nucleons)
+    # Everything else the de-excitation threw off: nucleons plus any light
+    # nuclei (alphas) that are not the residue.
+    ejected = [p for p in final_state if p["pdg"] in (2112, 2212)] + nuclei
+    if ejected:
+        tally = {}
+        for particle in ejected:
+            label = particle_name(particle["pdg"])
+            tally[label] = tally.get(label, 0) + 1
+        fields["ejected"] = " ".join(
+            f"{n}{label}" for label, n in sorted(tally.items()))
+    else:
+        fields["ejected"] = "none"
+
+    gammas = [p for p in final_state if p["pdg"] == 22]
+    fields["gammas"] = str(len(gammas))
+    if gammas:
+        # Sum should recover the primary residue's excitation energy whenever
+        # nothing else was ejected -- a useful consistency check.
+        fields["gamma_sum"] = f"{sum(g['energy'] for g in gammas):.3f} {unit}"
+        brightest = sorted((g["energy"] for g in gammas), reverse=True)[:3]
+        fields["gamma_top"] = " / ".join(f"{e:.2f}" for e in brightest)
 
     # Real output declares its own cross-section unit in the run-info block
     # (NuHepMC.Units.CrossSection.*), so label it from the file rather than

@@ -7,8 +7,17 @@ using Toybox.WatchUi;
 // ASCII display strings, so there is no formatting or transliteration on-device.
 class MarleyView extends WatchUi.View {
 
+    // The diagram depicts the fixed reaction in config/one_event.js. If the
+    // published reaction ever stops matching, we draw text instead of a lie.
+    const DEPICTED_REACTION = "nue + 40Ar -> e- + 40K*";
+
+    hidden var diagram;
+
     function initialize() {
         View.initialize();
+        // Loaded once rather than per-frame: onUpdate runs often and the
+        // bitmap is the largest thing this app holds.
+        diagram = WatchUi.loadResource(Rez.Drawables.Diagram);
     }
 
     function onUpdate(dc as Graphics.Dc) as Void {
@@ -21,11 +30,10 @@ class MarleyView extends WatchUi.View {
         var cx = dc.getWidth() / 2;
         var cy = dc.getHeight() / 2;
 
-        dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, cy - 95, Graphics.FONT_XTINY, "MARLEY",
-                    Graphics.TEXT_JUSTIFY_CENTER);
-
         if (data == null) {
+            dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, cy - 95, Graphics.FONT_XTINY, "MARLEY",
+                        Graphics.TEXT_JUSTIFY_CENTER);
             dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
             dc.drawText(cx, cy - 10, Graphics.FONT_SMALL, app.statusLine,
                         Graphics.TEXT_JUSTIFY_CENTER);
@@ -41,23 +49,28 @@ class MarleyView extends WatchUi.View {
             return;
         }
 
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, cy - 68, Graphics.FONT_XTINY, data["reaction"],
-                    Graphics.TEXT_JUSTIFY_CENTER);
+        // The diagram states the reaction, so no text line duplicates it.
+        if (DEPICTED_REACTION.equals(data["reaction"])) {
+            dc.drawBitmap(cx - (diagram.getWidth() / 2), 12, diagram);
+        } else {
+            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, 48, Graphics.FONT_XTINY, data["reaction"],
+                        Graphics.TEXT_JUSTIFY_CENTER);
+        }
 
         drawEnergy(dc, cx, cy, data);
 
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, cy + 24, Graphics.FONT_XTINY,
+        dc.drawText(cx, cy + 42, Graphics.FONT_XTINY,
                     data["lepton"] + "   KE " + data["lepton_ke"],
                     Graphics.TEXT_JUSTIFY_CENTER);
-        dc.drawText(cx, cy + 46, Graphics.FONT_XTINY,
+        dc.drawText(cx, cy + 64, Graphics.FONT_XTINY,
                     data["residue"] + "   " + data["gammas"] + " gamma",
                     Graphics.TEXT_JUSTIFY_CENTER);
 
         if (app.statusLine != null && app.statusLine.length() > 0) {
             dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, cy + 68, Graphics.FONT_XTINY, app.statusLine,
+            dc.drawText(cx, cy + 86, Graphics.FONT_XTINY, app.statusLine,
                         Graphics.TEXT_JUSTIFY_CENTER);
         }
     }
@@ -74,7 +87,7 @@ class MarleyView extends WatchUi.View {
         if (value == null) {
             // Older payload with only the combined string: use a text font so
             // the unit still renders rather than becoming boxes.
-            dc.drawText(cx, cy - 34, Graphics.FONT_MEDIUM, data["energy"],
+            dc.drawText(cx, cy - 6, Graphics.FONT_MEDIUM, data["energy"],
                         Graphics.TEXT_JUSTIFY_CENTER);
             return;
         }
@@ -89,7 +102,7 @@ class MarleyView extends WatchUi.View {
         var gap = (unitWidth > 0) ? 6 : 0;
 
         var left = cx - (valueWidth + gap + unitWidth) / 2;
-        var top = cy - 46;
+        var top = cy - 14;
         dc.drawText(left, top, numberFont, value, Graphics.TEXT_JUSTIFY_LEFT);
 
         if (unitWidth > 0) {

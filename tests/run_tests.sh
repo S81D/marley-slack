@@ -56,6 +56,21 @@ else
   failures=$((failures + 1))
 fi
 
+echo "de-excitation bookkeeping"
+check real_event.hepmc3 ejected    "none"
+check real_event.hepmc3 gamma_sum  "2.730 MeV"
+check real_event.hepmc3 residue_ex "2.730 MeV"
+# Physics check: with nothing ejected, the gammas must carry away exactly the
+# primary residue's excitation energy. Catches mis-selected particles.
+python3 - <<'EOF'
+import subprocess
+out = subprocess.run(["python3","scripts/summarize_event.py","tests/real_event.hepmc3"],
+                     capture_output=True, text=True).stdout
+f = dict(l.split("=",1) for l in out.strip().splitlines())
+ex, gs = float(f["residue_ex"].split()[0]), float(f["gamma_sum"].split()[0])
+print(f"  {'ok  ' if abs(ex-gs) < 0.01 else 'FAIL'}  sum(Egamma) = {gs} MeV vs Ex = {ex} MeV")
+EOF
+
 echo "ascii transliteration (Garmin fonts lack the symbols)"
 ascii=$(python3 scripts/summarize_event.py --ascii tests/real_event.hepmc3 | sed -n 's/^reaction=//p')
 if [[ $ascii == "nue + 40Ar -> e- + 40K*" ]]; then
@@ -79,8 +94,8 @@ for fixture in tests/real_event.hepmc3 does_not_exist.hepmc3; do
   flat=$(printf '%s' "$payload" | jq -r '[.[] | type] | unique | join(",")' 2>/dev/null)
   empty=$(printf '%s' "$payload" | jq -r '[.[] | select(. == "")] | length' 2>/dev/null)
   label=$(basename "$fixture")
-  if [[ $keys == 14 && $flat == "string" && $empty == 0 ]]; then
-    printf '  ok    %-22s 14 flat string keys, none empty\n' "$label"
+  if [[ $keys == 18 && $flat == "string" && $empty == 0 ]]; then
+    printf '  ok    %-22s 18 flat string keys, none empty\n' "$label"
   else
     printf '  FAIL  %-22s keys=%s types=%s empty=%s\n' "$label" "$keys" "$flat" "$empty"
     failures=$((failures + 1))
