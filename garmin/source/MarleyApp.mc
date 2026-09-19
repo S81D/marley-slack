@@ -1,4 +1,5 @@
 using Toybox.Application;
+using Toybox.Lang;
 using Toybox.WatchUi;
 
 // Entry point, and the owner of state shared between the client and the view.
@@ -6,9 +7,10 @@ using Toybox.WatchUi;
 // for globals.
 class MarleyApp extends Application.AppBase {
 
-    var eventData;   // Dictionary parsed from latest_event.json, or null
-    var statusLine;  // short message shown under the title
-    var client;
+    // Typed so the view's data["reaction"] reads verify as container access.
+    var eventData as Lang.Dictionary?;
+    var statusLine as Lang.String;
+    var client as MarleyClient;
 
     function initialize() {
         AppBase.initialize();

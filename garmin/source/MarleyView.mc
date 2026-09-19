@@ -1,5 +1,6 @@
 using Toybox.Application;
 using Toybox.Graphics;
+using Toybox.Lang;
 using Toybox.WatchUi;
 
 // Draws the event. Every value arrives from latest_event.json already
@@ -10,9 +11,9 @@ class MarleyView extends WatchUi.View {
         View.initialize();
     }
 
-    function onUpdate(dc) {
+    function onUpdate(dc as Graphics.Dc) as Void {
         var app = Application.getApp();
-        var data = app.eventData;
+        var data = app.eventData as Lang.Dictionary?;
 
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();

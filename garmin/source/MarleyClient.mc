@@ -1,5 +1,7 @@
 using Toybox.Application;
 using Toybox.Communications;
+using Toybox.Lang;
+using Toybox.PersistedContent;
 using Toybox.Timer;
 using Toybox.WatchUi;
 
@@ -14,9 +16,9 @@ class MarleyClient {
     const POLL_MS = 20000;  // MARLEY takes ~2 min in CI, so poll every 20 s
     const POLL_MAX = 9;     // ...and give up after ~3 minutes
 
-    var timer;
-    var polls;
-    var baseline;  // generated_at before we asked; a change means a NEW event
+    var timer as Timer.Timer?;
+    var polls as Lang.Number;
+    var baseline as Lang.String?;  // generated_at before we asked; a change means a NEW event
 
     function initialize() {
         timer = null;
@@ -25,7 +27,7 @@ class MarleyClient {
     }
 
     // START button: ask GitHub Actions to generate an event.
-    function summon() {
+    function summon() as Void {
         var app = Application.getApp();
         var token = getToken();
 
@@ -59,7 +61,8 @@ class MarleyClient {
 
     // A successful dispatch answers 204 No Content, so `data` arriving null
     // here is success, not an error. Anything 2xx counts.
-    function onDispatch(responseCode, data) {
+    function onDispatch(responseCode as Lang.Number,
+                          data as Lang.Dictionary or Lang.String or PersistedContent.Iterator or Null) as Void {
         var app = Application.getApp();
         if (responseCode >= 200 && responseCode < 300) {
             app.statusLine = "Building...";
@@ -73,7 +76,7 @@ class MarleyClient {
     }
 
     // Read whatever is currently published. Safe to call any time.
-    function fetchLatest() {
+    function fetchLatest() as Void {
         var options = {
             :method => Communications.HTTP_REQUEST_METHOD_GET,
             :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
@@ -81,12 +84,13 @@ class MarleyClient {
         Communications.makeWebRequest(EVENT_URL, null, options, method(:onEvent));
     }
 
-    function onEvent(responseCode, data) {
+    function onEvent(responseCode as Lang.Number,
+                          data as Lang.Dictionary or Lang.String or PersistedContent.Iterator or Null) as Void {
         var app = Application.getApp();
 
         if (responseCode == 200 && data != null) {
             var fresh = !sameStamp(stampOf(data), baseline);
-            app.eventData = data;
+            app.eventData = data as Lang.Dictionary;
             if (timer == null) {
                 app.statusLine = "";
             } else if (fresh) {
@@ -103,7 +107,7 @@ class MarleyClient {
 
     // Each poll is a tiny callback, so the watchdog never sees a long-running
     // loop -- the waiting happens in the timer, not in our code.
-    function startPolling() {
+    function startPolling() as Void {
         polls = 0;
         if (timer == null) {
             timer = new Timer.Timer();
@@ -111,7 +115,7 @@ class MarleyClient {
         timer.start(method(:onPoll), POLL_MS, true);
     }
 
-    function onPoll() {
+    function onPoll() as Void {
         polls = polls + 1;
         if (polls > POLL_MAX) {
             Application.getApp().statusLine = "Timed out - press START";
@@ -122,7 +126,7 @@ class MarleyClient {
         fetchLatest();
     }
 
-    function stopPolling() {
+    function stopPolling() as Void {
         if (timer != null) {
             timer.stop();
             timer = null;
@@ -130,7 +134,7 @@ class MarleyClient {
         polls = 0;
     }
 
-    function getToken() {
+    function getToken() as Lang.String? {
         var token = null;
         try {
             token = Application.Properties.getValue("githubToken");
@@ -143,12 +147,12 @@ class MarleyClient {
         return token;
     }
 
-    function stampOf(data) {
+    function stampOf(data as Lang.Dictionary?) as Lang.String? {
         if (data == null) { return null; }
-        return data["generated_at"];
+        return data["generated_at"] as Lang.String?;
     }
 
-    function sameStamp(a, b) {
+    function sameStamp(a as Lang.String?, b as Lang.String?) as Lang.Boolean {
         if (a == null || b == null) { return false; }
         return a.equals(b);
     }
