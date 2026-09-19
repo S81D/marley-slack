@@ -219,8 +219,11 @@ def summarize(path):
         for particle in ejected:
             label = particle_name(particle["pdg"])
             tally[label] = tally.get(label, 0) + 1
+        # "1n"/"2p" read fine, but a nuclide label already starts with its
+        # mass number, so "1" + "4He" would read as fourteen. Space those.
         fields["ejected"] = " ".join(
-            f"{n}{label}" for label, n in sorted(tally.items()))
+            (f"{n} {label}" if label[0].isdigit() else f"{n}{label}")
+            for label, n in sorted(tally.items()))
     else:
         fields["ejected"] = "none"
 

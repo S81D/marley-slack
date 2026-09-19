@@ -73,16 +73,11 @@ class MarleyView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(36, 44, Graphics.FONT_XTINY, textOf(data, "residue") + "*",
                     Graphics.TEXT_JUSTIFY_LEFT);
-        var ex = textOf(data, "residue_ex");
-        if (ex.length() > 0) {
-            dc.drawText(20, 62, Graphics.FONT_XTINY, "Ex " + ex,
-                        Graphics.TEXT_JUSTIFY_LEFT);
-        }
 
         // Upper-right: the outgoing electron.
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(224, 44, Graphics.FONT_XTINY, "e-", Graphics.TEXT_JUSTIFY_RIGHT);
-        dc.drawText(236, 62, Graphics.FONT_XTINY, textOf(data, "lepton_ke"),
+        dc.drawText(240, 66, Graphics.FONT_XTINY, textOf(data, "lepton_ke"),
                     Graphics.TEXT_JUSTIFY_RIGHT);
 
         // Lower-right: the incoming neutrino.
@@ -101,23 +96,26 @@ class MarleyView extends WatchUi.View {
     // Bottom strip: what the excited nucleus shed on the way down.
     hidden function drawDeexcitation(dc as Graphics.Dc,
                                      data as Lang.Dictionary) as Void {
-        dc.drawBitmap(78, 166, atom);
+        dc.drawBitmap(20, 70, atom);
 
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(118, 172, Graphics.FONT_XTINY, textOf(data, "residue"),
-                    Graphics.TEXT_JUSTIFY_LEFT);
+        var ex = textOf(data, "residue_ex");
+        if (ex.length() > 0) {
+            dc.drawText(130, 174, Graphics.FONT_XTINY, "Ex " + ex,
+                        Graphics.TEXT_JUSTIFY_CENTER);
+        }
 
         // "1 gamma" but "4 gammas".
         var count = textOf(data, "gammas");
         var sum = textOf(data, "gamma_sum");
         var line = count + ("1".equals(count) ? " gamma " : " gammas ") + sum;
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(130, 204, Graphics.FONT_XTINY, line, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(130, 194, Graphics.FONT_XTINY, line, Graphics.TEXT_JUSTIFY_CENTER);
 
         var ejected = textOf(data, "ejected");
         if (ejected.length() > 0 && !"none".equals(ejected)) {
             dc.setColor(Graphics.COLOR_ORANGE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(130, 222, Graphics.FONT_XTINY, "ejected " + ejected,
+            dc.drawText(130, 214, Graphics.FONT_XTINY, "ejected " + ejected,
                         Graphics.TEXT_JUSTIFY_CENTER);
         }
     }
