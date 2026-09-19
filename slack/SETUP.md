@@ -66,7 +66,22 @@ This is a webhook-*triggered* workflow: GitHub POSTs to Slack to start it.
 6. In GitHub: repo → Settings → Secrets and variables → Actions → **New
    repository secret**, named `SLACK_WEBHOOK_URL`, pasted value.
 
-Test it by running the workflow from GitHub's Actions tab. Note the trigger is
+**Test it without waiting on CI.** Once you have the trigger URL, fire a real
+payload at it from your laptop — no push, no workflow run:
+
+```bash
+export SLACK_WEBHOOK_URL='https://hooks.slack.com/triggers/...'
+STATUS=success INVOKER="$USER" RUN_URL=https://example.invalid \
+  scripts/slack_payload.sh tests/real_event.hepmc3 \
+  | curl -sS -X POST -H 'Content-Type: application/json' \
+         --data @- "$SLACK_WEBHOOK_URL"
+```
+
+That is byte-for-byte the payload the workflow sends, so if the message looks
+right here it will look right in CI. Iterate on the message wording this way
+rather than re-running the build each time.
+
+Then test the real thing by running the workflow from GitHub's Actions tab. Note the trigger is
 rate limited to **one request per second**, which the concurrency group in the
 workflow already keeps you well under.
 

@@ -56,6 +56,24 @@ else
   failures=$((failures + 1))
 fi
 
+echo "slack payload contract"
+# Slack fails the workflow if a declared variable is missing, so the payload must
+# always carry all 11 keys as flat strings -- even when there is no event file.
+for fixture in tests/real_event.hepmc3 does_not_exist.hepmc3; do
+  payload=$(STATUS=success INVOKER=tester SEED=1 RUN_URL=http://x \
+            scripts/slack_payload.sh "$fixture" 2>/dev/null)
+  keys=$(printf '%s' "$payload" | jq -r 'keys | length' 2>/dev/null)
+  flat=$(printf '%s' "$payload" | jq -r '[.[] | type] | unique | join(",")' 2>/dev/null)
+  empty=$(printf '%s' "$payload" | jq -r '[.[] | select(. == "")] | length' 2>/dev/null)
+  label=$(basename "$fixture")
+  if [[ $keys == 11 && $flat == "string" && $empty == 0 ]]; then
+    printf '  ok    %-22s 11 flat string keys, none empty\n' "$label"
+  else
+    printf '  FAIL  %-22s keys=%s types=%s empty=%s\n' "$label" "$keys" "$flat" "$empty"
+    failures=$((failures + 1))
+  fi
+done
+
 echo
 if (( failures )); then echo "$failures check(s) FAILED"; exit 1; fi
 echo "all checks passed"

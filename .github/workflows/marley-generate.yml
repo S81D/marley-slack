@@ -63,10 +63,8 @@ jobs:
         run: scripts/run_marley.sh
 
       - name: Summarize the event
-        id: summary
         run: |
           python3 scripts/summarize_event.py events.hepmc3 --text
-          python3 scripts/summarize_event.py events.hepmc3 >> "$GITHUB_OUTPUT"
           {
             echo '### MARLEY event'
             echo '```'
@@ -91,46 +89,22 @@ jobs:
         if: always()
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          JOB_STATUS: ${{ job.status }}
+          STATUS: ${{ job.status }}
           INVOKER: ${{ inputs.invoker }}
-          SEED: ${{ steps.summary.outputs.seed || github.run_id }}
+          SEED: ${{ github.run_id }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          REACTION: ${{ steps.summary.outputs.reaction }}
-          ENERGY: ${{ steps.summary.outputs.energy }}
-          LEPTON: ${{ steps.summary.outputs.lepton }}
-          LEPTON_KE: ${{ steps.summary.outputs.lepton_ke }}
-          RESIDUE: ${{ steps.summary.outputs.residue }}
-          GAMMAS: ${{ steps.summary.outputs.gammas }}
-          XSEC: ${{ steps.summary.outputs.xsec }}
         run: |
+          # Built by scripts/slack_payload.sh so the identical payload can be
+          # produced locally while iterating on the message (see slack/SETUP.md).
+          # Missing events.hepmc3 is fine: every field then reports "n/a".
+          scripts/slack_payload.sh events.hepmc3 > payload.json
+          echo "Payload:"
+          cat payload.json
+
           if [ -z "$SLACK_WEBHOOK_URL" ]; then
             echo "SLACK_WEBHOOK_URL is not set -- skipping the Slack post."
             exit 0
           fi
-
-          # A Slack webhook trigger fails if a variable it declares is missing
-          # from the payload, so every key is always sent, with "n/a" standing in
-          # where the event could not be parsed. jq does the quoting, which
-          # matters because the reaction string is UTF-8 (nu_e, arrows, 40K).
-          jq -n \
-            --arg status    "$JOB_STATUS" \
-            --arg invoker   "${INVOKER:-someone}" \
-            --arg reaction  "${REACTION:-n/a}" \
-            --arg energy    "${ENERGY:-n/a}" \
-            --arg lepton    "${LEPTON:-n/a}" \
-            --arg lepton_ke "${LEPTON_KE:-n/a}" \
-            --arg residue   "${RESIDUE:-n/a}" \
-            --arg gammas    "${GAMMAS:-n/a}" \
-            --arg xsec      "${XSEC:-n/a}" \
-            --arg seed      "$SEED" \
-            --arg run_url   "$RUN_URL" \
-            '{status: $status, invoker: $invoker, reaction: $reaction,
-              energy: $energy, lepton: $lepton, lepton_ke: $lepton_ke,
-              residue: $residue, gammas: $gammas, xsec: $xsec,
-              seed: $seed, run_url: $run_url}' > payload.json
-
-          echo "Posting to Slack:"
-          cat payload.json
 
           curl --fail-with-body -sS -X POST \
             -H 'Content-Type: application/json' \
