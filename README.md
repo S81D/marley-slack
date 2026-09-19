@@ -23,7 +23,7 @@ It is a demo, not a computing system.
 | [config/one_event.js](config/one_event.js) | MARLEY job config — one νe + ⁴⁰Ar CC event |
 | [scripts/run_marley.sh](scripts/run_marley.sh) | Build + generate + dump; runs on a laptop too |
 | [scripts/summarize_event.py](scripts/summarize_event.py) | HepMC3 → the handful of fields Slack quotes |
-| [scripts/slack_payload.sh](scripts/slack_payload.sh) | Builds the flat JSON Slack's webhook trigger wants |
+| [scripts/event_payload.sh](scripts/event_payload.sh) | Builds the flat JSON event payload (Slack + the watch) |
 | [tests/run_tests.sh](tests/run_tests.sh) | Parser checks against both fixtures |
 | [tests/sample_event.hepmc3](tests/sample_event.hepmc3) | Fixture from MARLEY's docs (no run-info block) |
 | [tests/real_event.hepmc3](tests/real_event.hepmc3) | Real MARLEY v2.0.0 output, seed 18273645 |

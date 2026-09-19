@@ -1,0 +1,4 @@
+<properties>
+  <!-- Fine-grained PAT, Actions:write on this repo only. Empty = viewer mode. -->
+  <property id="githubToken" type="string"></property>
+</properties>

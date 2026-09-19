@@ -1,0 +1,5 @@
+<settings>
+  <setting propertyKey="@Properties.githubToken" title="GitHub token">
+    <settingConfig type="alphaNumeric"/>
+  </setting>
+</settings>

@@ -83,6 +83,25 @@ jobs:
             one_event.seed*.js
           if-no-files-found: warn
 
+      # Published for the Garmin app to read. Written even on failure so the
+      # watch can show "failure" instead of a stale event.
+      - name: Build the published event file
+        if: always()
+        env:
+          STATUS: ${{ job.status }}
+          INVOKER: ${{ inputs.invoker }}
+          SEED: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          mkdir -p _site
+          scripts/event_payload.sh events.hepmc3 | tee _site/latest_event.json
+
+      - name: Upload the Pages artifact
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
       # Runs even on failure so a broken build is reported in Slack rather than
       # silently leaving the request unanswered.
       - name: Announce in Slack
@@ -94,10 +113,10 @@ jobs:
           SEED: ${{ github.run_id }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          # Built by scripts/slack_payload.sh so the identical payload can be
+          # Built by scripts/event_payload.sh so the identical payload can be
           # produced locally while iterating on the message (see slack/SETUP.md).
           # Missing events.hepmc3 is fine: every field then reports "n/a".
-          scripts/slack_payload.sh events.hepmc3 > payload.json
+          scripts/event_payload.sh events.hepmc3 > payload.json
           echo "Payload:"
           cat payload.json
 
@@ -110,3 +129,24 @@ jobs:
             -H 'Content-Type: application/json' \
             --data @payload.json \
             "$SLACK_WEBHOOK_URL"
+
+  publish:
+    # always() so a failed generation still publishes its "failure" payload.
+    if: always()
+    needs: generate
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # Pages allows one concurrent deployment; keep it separate from the
+    # marley-generate group so a queued build cannot block a deploy.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

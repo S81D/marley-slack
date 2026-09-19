@@ -33,6 +33,7 @@ This is a webhook-*triggered* workflow: GitHub POSTs to Slack to start it.
    | `gammas` | `3` |
    | `xsec` | `1.575e-05 pb (PerAtom)` |
    | `seed` | `18273645` |
+   | `generated_at` | `2026-09-19T03:50:31Z` |
    | `run_url` | `https://github.com/.../runs/18273645` |
 
    > **Every one of these is always sent.** A webhook trigger fails the whole
@@ -72,7 +73,7 @@ payload at it from your laptop — no push, no workflow run:
 ```bash
 export SLACK_WEBHOOK_URL='https://hooks.slack.com/triggers/...'
 STATUS=success INVOKER="$USER" RUN_URL=https://example.invalid \
-  scripts/slack_payload.sh tests/real_event.hepmc3 \
+  scripts/event_payload.sh tests/real_event.hepmc3 \
   | curl -sS -X POST -H 'Content-Type: application/json' \
          --data @- "$SLACK_WEBHOOK_URL"
 ```

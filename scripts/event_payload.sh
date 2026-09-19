@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 #
-# Build the flat JSON payload for Slack's webhook trigger.
+# Build the flat JSON event payload.
+#
+# Two consumers share it: Slack's webhook trigger (when configured) and the
+# latest_event.json published to GitHub Pages for the Garmin watch to read.
 #
 # Usage:  scripts/slack_payload.sh [EVENT_FILE]
 #
@@ -13,7 +16,7 @@
 # Overridable from the environment: STATUS INVOKER SEED RUN_URL
 #
 # Kept separate from the workflow so the Slack side can be tested locally:
-#   SLACK_WEBHOOK_URL=... scripts/slack_payload.sh tests/real_event.hepmc3 \
+#   SLACK_WEBHOOK_URL=... scripts/event_payload.sh tests/real_event.hepmc3 \
 #     | curl -sS -X POST -H 'Content-Type: application/json' \
 #            --data @- "$SLACK_WEBHOOK_URL"
 
@@ -52,6 +55,8 @@ jq -n \
   --arg xsec      "$(field xsec)" \
   --arg seed      "$seed" \
   --arg run_url   "${RUN_URL:-n/a}" \
+  --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   '{status: $status, invoker: $invoker, reaction: $reaction, energy: $energy,
     lepton: $lepton, lepton_ke: $lepton_ke, residue: $residue,
-    gammas: $gammas, xsec: $xsec, seed: $seed, run_url: $run_url}'
+    gammas: $gammas, xsec: $xsec, seed: $seed, run_url: $run_url,
+    generated_at: $generated_at}'
