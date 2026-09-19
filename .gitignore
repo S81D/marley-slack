@@ -11,3 +11,9 @@ payload.json
 __pycache__/
 .DS_Store
 /run/
+
+# Connect IQ app-signing key. Never commit: this repo is public, and the key
+# cannot be recovered or rotated for an already-published app.
+developer_key
+developer_key.der
+*.der
