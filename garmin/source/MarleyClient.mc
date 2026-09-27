@@ -54,8 +54,10 @@ class MarleyClient {
                 // otherwise be indistinguishable from a bad token.
                 "User-Agent" => "marley-slack-garmin",
                 "Authorization" => "Bearer " + token
-            },
-            :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
+            }
+            // No :responseType. GitHub returns 204 with an empty body, and
+            // asking Connect IQ to parse that as JSON fails with -400 even
+            // though the request succeeded.
         };
 
         Communications.makeWebRequest(DISPATCH_URL, { "ref" => "main" },
@@ -67,7 +69,8 @@ class MarleyClient {
     function onDispatch(responseCode as Lang.Number,
                           data as Lang.Dictionary or Lang.String or PersistedContent.Iterator or Null) as Void {
         var app = Application.getApp();
-        if (responseCode >= 200 && responseCode < 300) {
+        if ((responseCode >= 200 && responseCode < 300)
+                || responseCode == -400) {
             app.statusLine = "Building...";
             startPolling();
         } else if (responseCode == 401 || responseCode == 403) {
