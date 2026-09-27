@@ -73,7 +73,8 @@ class MarleyClient {
         } else if (responseCode == 401 || responseCode == 403) {
             app.statusLine = "Token rejected (" + responseCode + ")";
         } else {
-            app.statusLine = "Dispatch failed (" + responseCode + ")";
+            // Negative codes are Connect IQ transport errors, not HTTP status.
+            app.statusLine = "Dispatch err " + responseCode;
         }
         WatchUi.requestUpdate();
     }
@@ -144,7 +145,13 @@ class MarleyClient {
         } catch (ex) {
             token = null;
         }
-        if (token != null && token.length() == 0) {
+        // Fall back to the build-time secret. On a real watch the app setting
+        // wins; in the simulator, whose settings editor is unavailable here,
+        // Secret.mc carries the value. It is generated and never committed.
+        if (token == null || (token.toString()).length() == 0) {
+            token = Secret.GITHUB_TOKEN;
+        }
+        if (token != null && (token.toString()).length() == 0) {
             token = null;
         }
         return token;

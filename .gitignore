@@ -17,3 +17,7 @@ __pycache__/
 developer_key
 developer_key.der
 *.der
+
+# Build-time GitHub token for simulator testing. Generated, never committed.
+garmin/source/Secret.mc
+*marley_token*

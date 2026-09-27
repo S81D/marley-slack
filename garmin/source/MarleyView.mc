@@ -112,6 +112,17 @@ class MarleyView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(130, 194, Graphics.FONT_XTINY, line, Graphics.TEXT_JUSTIFY_CENTER);
 
+        // The status line outranks the ejected line: when something is wrong
+        // it is the only way to see it. Previously it was drawn solely in the
+        // no-data branch, so every error was invisible once an event had loaded.
+        var status = Application.getApp().statusLine;
+        if (status != null && status.length() > 0) {
+            dc.setColor(Graphics.COLOR_ORANGE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(130, 214, Graphics.FONT_XTINY, status,
+                        Graphics.TEXT_JUSTIFY_CENTER);
+            return;
+        }
+
         var ejected = textOf(data, "ejected");
         if (ejected.length() > 0 && !"none".equals(ejected)) {
             dc.setColor(Graphics.COLOR_ORANGE, Graphics.COLOR_TRANSPARENT);

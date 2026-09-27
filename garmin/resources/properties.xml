@@ -1,4 +1,18 @@
-<properties>
-  <!-- Fine-grained PAT, Actions:write on this repo only. Empty = viewer mode. -->
-  <property id="githubToken" type="string"></property>
-</properties>
+<resources xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
+
+    <properties>
+        <!-- Fine-grained PAT, Actions:write on this repo only. Empty = viewer mode. -->
+        <property id="githubToken" type="string"></property>
+    </properties>
+
+    <strings>
+        <string id="github_token_title">GitHub token</string>
+    </strings>
+
+    <settings>
+        <setting propertyKey="@Properties.githubToken" title="@Strings.github_token_title">
+            <settingConfig type="alphaNumeric" />
+        </setting>
+    </settings>
+
+</resources>
